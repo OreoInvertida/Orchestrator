@@ -1,0 +1,12 @@
+# Python
+__psycache__/
+models/__psycache__/
+routers/__psycache__/
+services/__psycache__/
+utils/__psycache__/
+*.pyc
+*.pyo
+
+# Envs
+venv/
+.env
