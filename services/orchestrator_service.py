@@ -17,7 +17,7 @@ async def process_registration(user_data: UserData, document: UploadFile):
     async with httpx.AsyncClient() as client:
         # Verificación con AUTH
         try:
-            auth_payload = {"id": user_data.id, "password": user_data.password}
+            auth_payload = {"id": user_data.id, "email":user_data.email, "password": user_data.password}
             response = await client.post(f"{AUTH_SERVICE_URL}/", json=auth_payload)
             logger.info(f"← Respuesta AUTH: {response.status_code}")
 
@@ -57,6 +57,7 @@ async def process_registration(user_data: UserData, document: UploadFile):
         try:
             logger.info("→ Enviando solicitud de creación a USERS")
             user_payload = user_data.dict()
+            user_payload.pop("password", None)
             response = await client.post(USERS_SERVICE_URL, json=user_payload)
             logger.info(f"← Respuesta USERS: {response.status_code}")
 
