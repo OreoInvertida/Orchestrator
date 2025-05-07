@@ -5,3 +5,4 @@ metadata:
 data:
   AUTH_SERVICE_URL: "http://auth"
   USERS_SERVICE_URL: "http://users"
+  DOCUMENTS_SERVICE_URL: "http://documents"

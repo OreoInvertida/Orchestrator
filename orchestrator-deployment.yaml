@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: orchestrator-deployment
+  name: orchestrator
 spec:
   replicas: 1
   selector:
@@ -14,8 +14,7 @@ spec:
     spec:
       containers:
         - name: orchestrator
-          image: orchestrator:latest
-          imagePullPolicy: Never
+          image: us-south1-docker.pkg.dev/micro-chiller-458819-r4/oreo-repository/orchestrator:latest
           ports:
             - containerPort: 8000
           envFrom:
