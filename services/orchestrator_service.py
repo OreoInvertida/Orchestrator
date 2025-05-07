@@ -18,7 +18,7 @@ async def process_registration(user_data: UserData, document: UploadFile):
         # Verificación con AUTH
         try:
             auth_payload = {"id": user_data.id, "email":user_data.email, "password": user_data.password}
-            response = await client.post(f"{AUTH_SERVICE_URL}/", json=auth_payload)
+            response = await client.post(f"{AUTH_SERVICE_URL}/validate", json=auth_payload)
             logger.info(f"← Respuesta AUTH: {response.status_code}")
 
             if response.status_code == 422:
@@ -58,7 +58,7 @@ async def process_registration(user_data: UserData, document: UploadFile):
             logger.info("→ Enviando solicitud de creación a USERS")
             user_payload = user_data.dict()
             user_payload.pop("password", None)
-            response = await client.post(USERS_SERVICE_URL, json=user_payload)
+            response = await client.post(f"{USERS_SERVICE_URL}/create", json=user_payload)
             logger.info(f"← Respuesta USERS: {response.status_code}")
 
             if response.status_code != 200:
