@@ -5,7 +5,7 @@ from utils.logger import logger
 from dotenv import load_dotenv
 import os
 
-load_dotenv()
+
 
 AUTH_SERVICE_URL = os.getenv("AUTH_SERVICE_URL")
 USERS_SERVICE_URL = os.getenv("USERS_SERVICE_URL")
@@ -18,7 +18,7 @@ async def process_registration(user_data: UserData, document: UploadFile):
         # Verificación con AUTH
         try:
             auth_payload = {"id": user_data.id, "email":user_data.email, "password": user_data.password}
-            response = await client.post(f"{AUTH_SERVICE_URL}/validate", json=auth_payload)
+            response = await client.post(f"{AUTH_SERVICE_URL}/validate/", json=auth_payload)
             logger.info(f"← Respuesta AUTH: {response.status_code}")
 
             if response.status_code == 422:

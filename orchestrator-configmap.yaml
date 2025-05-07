@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: orchestrator-config
+data:
+  AUTH_SERVICE_URL: "http://auth"
+  USERS_SERVICE_URL: "http://users"
