@@ -1,3 +1,4 @@
+import traceback
 import httpx
 from fastapi import UploadFile, HTTPException
 from models.user_models import UserData
@@ -9,7 +10,7 @@ import os
 
 AUTH_SERVICE_URL = os.getenv("AUTH_SERVICE_URL")
 USERS_SERVICE_URL = os.getenv("USERS_SERVICE_URL")
-DOCUMENTS_SERVICE_URL = os.getenv("USERS_SERVICE_URL")
+DOCUMENTS_SERVICE_URL = os.getenv("DOCUMENTS_SERVICE_URL")
 async def process_registration(user_data: UserData, document: UploadFile):
     logger.info(f"→ Iniciando registro para usuario ID: {user_data.id}")
     logger.info(f"→ Llamando a AUTH en: {AUTH_SERVICE_URL}/")
@@ -18,7 +19,7 @@ async def process_registration(user_data: UserData, document: UploadFile):
         # Verificación con AUTH
         try:
             auth_payload = {"id": user_data.id, "email":user_data.email, "password": user_data.password}
-            response = await client.post(f"{AUTH_SERVICE_URL}/validate", json=auth_payload)
+            response = await client.post(f"{AUTH_SERVICE_URL}/validate", json=auth_payload, timeout=30)
             logger.info(f"← Respuesta AUTH: {response.status_code}")
 
             if response.status_code == 422:
@@ -49,41 +50,62 @@ async def process_registration(user_data: UserData, document: UploadFile):
                     status_code=502,
                     detail="Error verificando identidad con la Registraduría."
                 )
-        except httpx.RequestError as e:
-            logger.error(f"Error conectando con AUTH: {e}")
-            raise HTTPException(status_code=503, detail=str(e))
+        except Exception as e:
+            logger.debug(traceback.format_exc())
+            logger.error(f"Error conectando con AUTH: {repr(e)}")
+            raise HTTPException(status_code=503, detail=repr(e))
 
         # Registro con USERS
         try:
             logger.info("→ Enviando solicitud de creación a USERS")
             user_payload = user_data.dict()
             user_payload.pop("password", None)
-            response = await client.post(f"{USERS_SERVICE_URL}/create", json=user_payload)
+            response = await client.post(f"{USERS_SERVICE_URL}/create", json=user_payload,timeout=30)
             logger.info(f"← Respuesta USERS: {response.status_code}")
-
             if response.status_code != 200:
                 raise HTTPException(
                     status_code=500,
                     detail="Error en la creación del usuario en el microservicio USERS."
                 )
+        except Exception as e:
+            logger.error(f"Error conectando con USERS: {repr(e)}")
+            logger.info(traceback.format_exc())
+            raise HTTPException(status_code=503, detail=repr(e))
+        
 
+        payload = {
+        "email": user_data.email,
+        "password": user_data.password}
+    
+        try:
+            response = await client.post(f"{AUTH_SERVICE_URL}/login", json=payload)
 
+            logger.info(f"← Response status: {response.status_code}")
+            logger.info(f"← Response body: {response.text}")
+
+            if response.status_code == 200:
+                data = response.json()
+                logger.info(f"✅ Access Token: {data['access_token']}")
+            else:
+                logger.error(f"⛔ Login failed: {response.status_code} - {response.text}")
         except httpx.RequestError as e:
-            logger.error(f"Error conectando con USERS: {e}")
-            raise HTTPException(status_code=503, detail=str(e))
+            logger.error(f"⚠️ HTTPX Request Error: {repr(e)}")
+            raise e
         
         try:
-            logger.info("→ Enviando solicitud de creación a DOCUMENTS")
-            response = await client.post(f"{DOCUMENTS_SERVICE_URL}/{user_data.id}", json=user_payload)
-            logger.info(f"← Respuesta USERS: {response.status_code}")
+            logger.info(f"→ Enviando solicitud de creación a DOCUMENTS: {DOCUMENTS_SERVICE_URL}")
+            file_bytes = await document.read()  # Read content from UploadFile
 
-            if response.status_code != 200:
-                raise HTTPException(
-                    status_code=500,
-                    detail="Error en la creación del usuario en el microservicio USERS."
-                )
-        except httpx.RequestError as e:
-            logger.error(f"Error conectando con USERS: {e}")
-            raise HTTPException(status_code=503, detail=str(e))
+            files = {
+            'file': (document.filename, file_bytes, document.content_type)
+            }
+            
+            response = await client.put(f"{DOCUMENTS_SERVICE_URL}/doc/{user_data.id}/cedula_de_ciudadania.{document.filename.split('.')[1]}",files=files,headers={"Authorization" : "bearer " + data['access_token']},timeout=30)
+            logger.info(f"← Respuesta DOCUMENTS: {response.status_code}")
+
+        except Exception as e:
+            logger.debug(traceback.format_exc())
+            logger.error(f"Error conectando con DOCUMENTS: {repr(e)}")
+            raise HTTPException(status_code=503, detail=str(repr(e)))
 
     return {"message": "Registro completado exitosamente."}
