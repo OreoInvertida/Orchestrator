@@ -11,13 +11,13 @@ AUTH_SERVICE_URL = os.getenv("AUTH_SERVICE_URL")
 USERS_SERVICE_URL = os.getenv("USERS_SERVICE_URL")
 DOCUMENTS_SERVICE_URL = os.getenv("USERS_SERVICE_URL")
 async def process_registration(user_data: UserData, document: UploadFile):
-    logger.info(f"→ Iniciando registro para usuario ID: {user_data.id}")
+    logger.info(f"→ Iniciando registro para usuario ID: {user_data.user_id}")
     logger.info(f"→ Llamando a AUTH en: {AUTH_SERVICE_URL}/")
 
     async with httpx.AsyncClient() as client:
         # Verificación con AUTH
         try:
-            auth_payload = {"id": user_data.id, "email":user_data.email, "password": user_data.password}
+            auth_payload = {"id": user_data.user_id, "email":user_data.email, "password": user_data.password}
             response = await client.post(f"{AUTH_SERVICE_URL}/validate", json=auth_payload)
             logger.info(f"← Respuesta AUTH: {response.status_code}")
 
@@ -74,16 +74,16 @@ async def process_registration(user_data: UserData, document: UploadFile):
         
         try:
             logger.info("→ Enviando solicitud de creación a DOCUMENTS")
-            response = await client.post(f"{DOCUMENTS_SERVICE_URL}/{user_data.id}", json=user_payload)
+            response = await client.post(f"{DOCUMENTS_SERVICE_URL}/{user_data.user_id}", json=user_payload)
             logger.info(f"← Respuesta USERS: {response.status_code}")
 
             if response.status_code != 200:
                 raise HTTPException(
                     status_code=500,
-                    detail="Error en la creación del usuario en el microservicio USERS."
+                    detail="Error en la creación del usuario en el microservicio Documents."
                 )
         except httpx.RequestError as e:
-            logger.error(f"Error conectando con USERS: {e}")
+            logger.error(f"Error conectando con Dpcuments: {e}")
             raise HTTPException(status_code=503, detail=str(e))
 
     return {"message": "Registro completado exitosamente."}
