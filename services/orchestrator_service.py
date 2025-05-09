@@ -100,7 +100,7 @@ async def process_registration(user_data: UserData, document: UploadFile):
             'file': (document.filename, file_bytes, document.content_type)
             }
             
-            response = await client.put(f"{DOCUMENTS_SERVICE_URL}/doc/{user_data.id}/cedula_de_ciudadania.{document.filename.split('.')[1]}",files=files,headers={"Authorization" : "bearer " + data['access_token']},timeout=30)
+            response = await client.put(f"{DOCUMENTS_SERVICE_URL}/doc/{user_data.user_id}/cedula_de_ciudadania.{document.filename.split('.')[1]}",files=files,headers={"Authorization" : "bearer " + data['access_token']},timeout=30)
             logger.info(f"← Respuesta DOCUMENTS: {response.status_code}")
 
         except Exception as e:
