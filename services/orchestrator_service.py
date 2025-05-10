@@ -142,3 +142,19 @@ async def sign_document(document_id, document_name, document_path, user_id):
         except Exception as e:
             logger.error(f"Error conectando con DOCUMENTS: {repr(e)}")
             raise HTTPException(status_code=503, detail=str(repr(e)))
+        
+
+
+async def get_operators():
+     async with httpx.AsyncClient() as client:
+        try:
+            response_get_operators = await client.get(f"{REGISTRADURIA_API}/getOperators")
+        except Exception as e:
+            logger.error(f"Error conectando con api externa: {e}")
+            raise e
+        
+        response_get_operators = response_get_operators.json()
+        filtered_list = [item for item in response_get_operators if "transferAPIURL" in item]
+        for item in filtered_list:
+            print(item["operatorName"], "->", item["transferAPIURL"])
+        return filtered_list
