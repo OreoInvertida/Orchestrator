@@ -108,4 +108,4 @@ async def process_registration(user_data: UserData, document: UploadFile):
             logger.error(f"Error conectando con DOCUMENTS: {repr(e)}")
             raise HTTPException(status_code=503, detail=str(repr(e)))
 
-    return {"message": "Registro completado exitosamente."}
+    return {"access_token" : data['access_token'], "token_type": "bearer"}
