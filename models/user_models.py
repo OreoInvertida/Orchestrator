@@ -6,3 +6,8 @@ class UserData(BaseModel):
     email: str
     address: str
     password: str
+
+class AuthDoc(BaseModel):
+    document_id: int
+    document_name: str
+    document_path:str

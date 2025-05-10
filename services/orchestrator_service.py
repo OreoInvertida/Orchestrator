@@ -11,6 +11,8 @@ import os
 AUTH_SERVICE_URL = os.getenv("AUTH_SERVICE_URL")
 USERS_SERVICE_URL = os.getenv("USERS_SERVICE_URL")
 DOCUMENTS_SERVICE_URL = os.getenv("DOCUMENTS_SERVICE_URL")
+REGISTRADURIA_API = os.getenv("REGISTRADURIA_API")
+
 async def process_registration(user_data: UserData, document: UploadFile):
     logger.info(f"→ Iniciando registro para usuario ID: {user_data.user_id}")
     logger.info(f"→ Llamando a AUTH en: {AUTH_SERVICE_URL}/")
@@ -109,3 +111,34 @@ async def process_registration(user_data: UserData, document: UploadFile):
             raise HTTPException(status_code=503, detail=str(repr(e)))
 
     return {"access_token" : data['access_token'], "token_type": "bearer"}
+
+
+
+async def sign_document(document_id, document_name, document_path, user_id):
+    logger.info(f"→ Iniciando firma para el documento ID: {document_id}")
+    logger.info(f"→ Llamando a DOCUMENTS en: {DOCUMENTS_SERVICE_URL}/")
+
+    async with httpx.AsyncClient() as client:
+        try:
+            logger.info(f"Searching for document url: {response_signed_url}")
+            response_signed_url = await client.post(f"{DOCUMENTS_SERVICE_URL}/docs/signed-urls",json={"document_paths": [document_path]})
+            data_urls_dict = response_signed_url.json()
+            logger.info(f"← Respuesta DOCUMENTS: {response_signed_url}")
+            
+
+            logger.info(f"Updating document sign metadata: {response_signed_url}")
+            response_sign_metadata = await client.patch(f"{DOCUMENTS_SERVICE_URL}/metadata/{document_id}/sign")
+            logger.info(f"← Respuesta DOCUMENTS: {response.status_code}")
+
+            logger.info(f"Reporting to external URL: {response_signed_url}")
+            response = await client.post(f"{REGISTRADURIA_API}/authenticateDocument", 
+                                         json={"id_citizen":user_id, "urlDocument": response_signed_url["signed_urls"][0], "document_title": document_name})
+            
+            if response.status_code == 200:
+                return {"message": "Documento firmado y reportado exitosamente."}
+            else:
+                raise HTTPException(status_code=500, detail="Error firmando el documento.")
+
+        except Exception as e:
+            logger.error(f"Error conectando con DOCUMENTS: {repr(e)}")
+            raise HTTPException(status_code=503, detail=str(repr(e)))
